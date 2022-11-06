@@ -1,0 +1,16 @@
+/ TAB CLOAK METHOD \
+
+How to cloak / disguise your window tabs
+: Open your browser and press CTRL+SHIFT+O at the same time
+: Now click the three dots on the far right and click "Add new bookmark" 
+: Now copy and paste the javascript code from below and set it as the URL
+: Don't worry about the name you can set it to whatever
+: Now open a tab you want to disguise and click the bookmark
+: Enter the title you want for the tab (so if I want to cloak it as clever I would put "Clever | Portal")
+: Then enter the number of which icon you want to use (if I was cloaking my tab as google search I would enter 2)
+: Now your tab should be disguised, note this won't show on go-guardian it only has a visual effect
+
+
+/ JAVASCRIPT BOOKMARKLET \
+
+javascript:document.title=prompt('Welcome to the Tab Cloak setup!\n\nEnter the title you want to set for this tab::');var icon=document.querySelector (`link[rel='icon']`);if (!icon) {icon = document.createElement('link');icon.rel='icon';};switch(prompt ('What icon would you like to use?\n\n[1] Clever Portal\n[2] Google Search\n[3] Custom URL\n\nPlease only enter a number!%27)){case%271%27:icon.setAttribute (%27href%27,%27https://www.yonkerspublicschools.org/cms/lib/NY01814060/Centricity/Domain/4930/clever1.png%27);break;case%272%27:icon.setAttribute (%27href%27,%27https://www.google.com/favicon.ico%27);break;case%273%27:icon.setAttribute(%27href%27,prompt (%27Please enter the URL for the icon you want:%27));} document.head.appendChild(icon);
