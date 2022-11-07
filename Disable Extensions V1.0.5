@@ -1,0 +1,20 @@
+/ DISABLE EXTENSIONS METHOD \
+
+How to disable chrome extensions, this includes go guardian aswell
+: Open your browser and press CTRL+SHIFT+O at the same time
+: Now click the three dots on the far right in the bookmark manager and click "Add new bookmark"                 -- Most popular method
+: Now copy and paste the javascript code from below and set it as the URL
+: Also make sure you set the name to "IngotLT"
+: Now open a new tab and go to https://chrome.google.com/webstorex
+: Then click the bookmark and it should open the Ingot UI
+: On the top right enable "Developer Mode" and you're set
+: Now you can disable the extensions that you don't want on chrome
+
+Follow this link if you're having trouble setting the bookmark
+https://watch.screencastify.com/v/UawPSKyFBb9bbi96zKAW
+
+
+
+/ JAVASCRIPT BOOKMARKLET \
+
+javascript:(function () {var a = document.createElement('script');a.src = 'https://cdn.jsdelivr.net/gh/FogNetwork/Ingot@latest/ingot.min.js';document.body.appendChild(a);}())
