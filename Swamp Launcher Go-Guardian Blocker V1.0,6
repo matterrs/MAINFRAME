@@ -1,0 +1,17 @@
+/ SWAMP LAUNCHER GO-GUARDIAN BYPASS METHOD \
+
+How to break go-guardian until chromebook powerwash
+
+( Setup )
+: Go to chromeOS settings app on your chromebook and search for 'DNS'
+: Click the first option then click 'Custom Name Servers'
+: Set all four boxes to 0.0.0.0 but the first box
+: Make sure the first box is set to 150.136.6.90
+
+( Spoofed Connection )
+: In a new tab in chrome, go to https://tinyurl.com/s-w-a-m-p
+: Next on this page, press ctrl + shift + r at the same time refer to this action as "GHT"
+: Now in the same tab go to, https://ssl.google-analytics.com/swamp and maybe do GHT
+: You should get a warning message from chrome (If not restart the setup process)
+: Then type 'thisisunsafe' on your chromebook to bypass this warning (Make sure you don't typo)
+: You should now be in [SWAMP]! If you can keep doiing GHT on the extension page and swamp keeps loading, then you've set it up correctly. If it doesn't then you'll have go back to the link and type it again
