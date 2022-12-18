@@ -1,0 +1,79 @@
+So, you are confused about point:blank and want to know how it works? Well heres the full breakdown, Enjoy!
+
+Note: When I use the phrase "bookmarklet" in this article, I am referring to any javascript:// url that is entered through the browser in order to run code on a certain website.
+You are not supposed to be able to run bookmarklets on certain pages in Chrome.
+
+Chrome won't let you run bookmarklets on any tab where the URL starts with "chrome", including: chrome:// protocols, which are used for WebUI pages such as chrome://settings
+chrome-extension:// protocols, which are used for basically any page belonging to a Chrome extension
+
+Why would someone want to be able to run code on these? I'll answer these questions from a bypassing perspective: On some chrome:// pages, you could use private chrome APIs to do actions that would otherwise be blocked, such as changing settings or disabling extensions
+On chrome-extension:// pages, you would have access to mess with the extension's processes/variables and even uninstall it. Chrome's method of blocking bookmarklets is successful. The "bug" in this article doesn't actually bypass that. However, it lets the bookmarklet script access the restricted page without actually being run on that page.
+
+This seems impossible. If any website could run code like that, then any website could be changing your browser settings right now. So there's a catch here. Chrome's security model when it comes to cross-domain access is very, very good. There has never been a major bug found which allowed one website to fully control another website, let alone privileged ones. The exploit in this article is technically intended behavior. The Chromium team just never considered the possibility of this being abused for users who cannot use Inspect Element. This exploit not only requires a lot of interaction from the user, but it doesn't even work for all "chrome" pages.
+
+With all this said, let's get into the exploit. So, what's about:blank? Well, it's definitely not a website. It has no host, no cookies, and no content. It's more like a command to the browser, telling it to load a blank page.
+Now, here's the important bit: if a page opens about:blank in some way, the browser will act as if the about:blank tab has same domain as the page which opened it. Since this is the case, it's easy to run code with the same permissions as the page that opened it (either with opener or iframing, which I will talk about later in the article).
+For a deeper understanding and reasoning behind this, I would recommend reading https://developer.mozilla.org/en-US/docs/Web/Security/Same-origin_policy, particularly the "Inherited Origins" section. And of course, there is no block against running bookmarklets on about:blank. So you might be able to see where I'm going with this.
+
+POC so far: (on a personal computer) Open Inspect Element on, say, chrome://settings, Run open(), which opens about:blank by default, Switch to the blank page that was just opened, Run javascript:alert(location.href) in the URL bar, The alert box will say that the domain is chrome://settings even though you are on about:blank. Now try running javascript:opener.alert() on the blank page. If the original settings window is open, it will open an alert box too. This means that you're actually running code on the settings page by using a bookmarklet on about:blank. This is because the browser sees them as having the same domain, and thus allows you run scripts on one tab and have them execute in the other.
+
+Obviously, there is still one big gap to fill. You need to get the "chrome" page to naturally open about:blank, without you using Inspect. From my research, there are two universal ways to do this while keeping the opener object intact, which I will be covering in this section.
+Find any usage of window.open() in the vulnerable page. This one pretty self-explanatory. And no, the link doesn't even have to point to about:blank. Chrome has an "X" button next to the URL bar which can be used to stop a page from loading (or you can just press escape on your keyboard). If you cancel loading before the page has been fetched or loaded at all, Chrome will set it to about:blank by default, which is extremely convenient. If the link points to a "chrome" URL, the margin for cancelling is tiny but still possible.
+
+A very specific type of link will work too. Any link with rel="opener" allows for the new tab to have some access to the page that opened it, which is actually full access when the window opened is about:blank.
+<a href="https://example.com" target="_blank" rel="opener">Example link</a>
+
+Before Chrome version 88, all target="_blank" links had this property by default. But then people realized that it wasn't a great idea, and so this assumption was removed in 2020. Nowadays, pages have to actually specify rel="opener", which makes this type of link basically impossible to find.
+But this knowledge is still very helpful when it comes to the other universal method of this exploit: Find an HTML injection bug in the vulnerable page
+
+This means that you would have to be able to control part of the source code of the page.
+
+Usually, this would be a big security concern, but almost all "chrome" pages have Content Security Policies by default, meaning that injected HTML can't run JavaScript, which prevents XSS attacks. Because of this, Chrome extension developers in particular don't pay much attention to HTML injection vulnerabilities. In fact, I was able to find unsafe use of innerHTML on all of the following extensions: GoGuardian, Securly, Cisco Umbrella, Blocksi, and iBoss. I'm sure there is many more out but this is only a few, You'll have to figure those out for yourself, though.
+Once you find an HTML injection bug in a "chrome" page, you'd want to insert the code below, then click the link.
+<a href="about:blank" target="_blank" rel="opener">point-blank POC</a>
+Then, you'd run a bookmarklet on the new about:blank tab and use opener to access the "chrome" page.
+Textboxes on "chrome" pages which use the contenteditable property can also be abused. These allow for rich HTML editing instead of normal text like an <input> box. You'd simply want to drag a rel="opener" link like this one into the textbox. Chrome's built-in sanitizer sees this as non-dangerous.
+
+Again, this is all technically intended behavior. Chrome's security model is good. Web developers just never thought of the possibility of this being abused to do blocked things.
+
+It is also worth noting that there is another scenario which allows for code execution on "chrome" pages. However, it doesn't work on pages with chrome:// protocols due to added restrictions regarding opening/embedding these URLs.
+
+Control some link or redirect on a vulnerable chrome-extension:// page
+Point any <a> link to about:blank or any other invalid URL (for example by putting "%00" in there), Point any redirect to about:blank, Get the extension to use chrome.tabs.update() to redirect any tab directly to about:blank
+If you get a page to point a link or redirect to about:blank, the browser will also treat it as if the blank page is the same domain as the one which triggered the redirect. The target has to be about:blank because cancelling tabs from loading only works with window.open() or rel="opener".
+
+However, in this case, there is no opener element. But since you have cross-domain permissions, you can still do the following on the blank page with bookmarklets:
+Create an <iframe> element with the src being any page belonging to the extension that redirected to the about:blank tab (the code below is an example bookmarklet for this)
+javascript:document.write(`<iframe src="chrome-extension://${document.domain}/manifest.json">`)
+
+Access the document of the new iframe with frames[0]
+Once you have code execution on an extension, running the code below on that tab will strip it of all its permissions and basically disable it until the next restart:
+chrome.extension.getBackgroundPage().close()
+
+By the way, if you manage to open some blank page from a "chrome" page, but aren't sure whether it'll work or not, here's a simple test to run (on the blank page):
+javascript:alert(localStorage)
+If the alert box mentions the "chrome" URL (assuming that it ran successfully at all), then you've successfully set up the exploit and linked hosts!
+
+Okay, I think that's everything. Time for a full POC!
+Finalized example POC:
+Go to chrome://settings/resetProfileSettings
+Click "current settings", which uses window.open()
+In the new tab, run the bookmarklet javascript:opener.alert()
+You are now running code on the chrome://settings tab with only a bookmarklet!
+
+And there it is.
+
+Obviously, the /resetProfileSettings method is ridiculously easy since it opens an about:blank window by itself. If you want to practice cancelling a page load, /appearance works too. Below, I've attatched a brief list of a few other chrome:// pages which are vulnerable. You'll have to figure these out for yourself.
+chrome://autofill-internals (rich HTML editing textbox)
+chrome://bookmarks (unsafely opened window)
+chrome://extensions (unsafely opened window) (has chrome.developerPrivate)
+chrome://feedback (unsafely opened window)
+chrome://os-settings (unsafely opened window)
+
+
+It's going to be exciting to see where this goes.
+
+So many new exploits are made possible with this: usage of internal chrome APIs, and code execution in the filter extensions which I mentioned earlier. Now we just need people to start developing these while I be lazy and write posts.
+
+
+Point:Blank discovered by Bypassi, https://blog.bypassi.com/
